@@ -54,12 +54,20 @@ def make_A(N, delta):
 a = -1
 b = 1
 
-g = lambda x, y: (x ** 2 + y ** 2 - 1) / 4
+
+# g = lambda x, y: (x ** 2 + y ** 2 - 1) / 4
+
+def g(x, y):
+    if x ** 2 + y ** 2 < 1:
+        return (x ** 2 + y ** 2 - 1) / 4
+    else:
+        return 0
+
 
 es = []
 ns = []
 
-n = 20
+n = 80
 
 
 def draw_plot(xs, ys, u):
@@ -93,12 +101,12 @@ for N in range(n, n + 1, 1):
     # print(u_reshaped)
     u = np.reshape(u_reshaped, (N, N))
 
-    draw_plot(xs, ys, u)
+    # draw_plot(xs, ys, u)
 
     print(ys)
 
     z = [[g(x, y) for y in ys] for x in xs]
-    draw_plot(xs, ys, z)
+    # draw_plot(xs, ys, z)
 
     print(np.min(u))
 
@@ -113,7 +121,7 @@ for N in range(n, n + 1, 1):
                 x = (a + k * delta)
                 y = (a + j * delta)
                 expected = g(x, y)
-                print(expected, u[k][j])
+                # print(expected, u[k][j])
                 if expected == 0:
                     continue
                 errors.append(abs(expected - u[k][j]) / expected)

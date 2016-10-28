@@ -33,7 +33,7 @@ g = lambda x: 2 * math.tan(1 / 2) * math.sin(x) + 2 * math.cos(x) + x ** 2 - 2
 
 es = []
 ns = []
-for N in range(5, 506, 100):
+for N in range(5, 1606, 100):
     delta, gs, xs = get_g(a, 0, 1, 1, N, lambda x: x ** 2)
     A = make_A(N, delta)
     print(len(gs))
@@ -52,8 +52,9 @@ for N in range(5, 506, 100):
         errors.append(abs(expected - f[k]) / expected)
 
     es.append(max(errors))
-    ns.append(N)
+    ns.append(1 / N)
 
 plt.yscale('log')
+plt.xscale('log')
 plt.plot(ns, es)
 plt.show()

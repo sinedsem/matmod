@@ -1,14 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-a = [[2.32, 0.12, 1.57], [1.69, 4.17, -0.33], [0.45, 1.82, 3.15]]
-b = [2.01, 3.23, 0.94]
+a = [[5, 2, 3], [2, 6, 1], [3, 1, 7]]
+true_x = [1, 2, 3]
+b = np.dot(a, true_x)
 
-#print(np.linalg.solve(a, b))
+
+def find_magic_number(a):
+    p = np.zeros((len(a), len(a)))
+    for i in range(len(a)):
+        p[i][i] = 1 / a[i][i]
+    return np.linalg.norm(np.eye(3, 3) - np.dot(p, a), ord=2)
 
 
 def solve(a, b):
-    result = []
+    residual = []
+    error = []
     x = np.zeros(len(b))
 
     p = np.zeros((len(a), len(a)))
@@ -17,13 +24,18 @@ def solve(a, b):
         p[i][i] = 1 / a[i][i]
 
     for k in range(100):
-        x = x + np.dot(p, b) - np.dot(np.dot(p, a), x)
-        result.append(sum((np.dot(a, x) - b) ** 2))
-        if result[-1] < 10 ** -29:
+        f_x = np.dot(p, b) - np.dot(np.dot(p, a), x)
+        x = x + f_x
+        residual.append(np.sqrt(sum((np.dot(a, x) - b) ** 2)))
+        error.append(np.sqrt(sum((x - true_x) ** 2)))
+        if residual[-1] < 10 ** -29:
             break
 
-    plt.plot(range(1, len(result) + 1), result)
+    plt.plot(range(1, len(residual) + 1), residual)
+    plt.plot(range(1, len(error) + 1), error)
     plt.yscale('log')
     plt.show()
 
+
 solve(a, b)
+# print(find_magic_number(a))
