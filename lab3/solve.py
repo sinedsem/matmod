@@ -4,6 +4,15 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import math
+from scipy.sparse import lil_matrix, csr_matrix
+
+from cgm import solve_cgm, quick_solve_cgm
+
+eps = 10 ** -5
+
+
+def is_pos_def(x):
+    return np.all(np.linalg.eigvals(x) > 0)
 
 
 def get_B(a, b, N):
@@ -18,56 +27,43 @@ def get_B(a, b, N):
 
     for k in range(N):
         for j in range(N):
-            if (k - N / 2) ** 2 + (j - N / 2) ** 2 < delta2n:
-                # if True:
+            if (k - N / 2) ** 2 + (j - N / 2) ** 2 <= delta2n:
                 result[k][j] = delta2
-
-    # result[0] -= fa / (delta ** 2)
-    # result[-1] -= fb / (delta ** 2)
 
     return delta, result, xs, ys
 
 
-def make_A(N, delta):
-    delta2 = delta ** 2
+def make_A_2d(N, delta):
+    half_N = N / 2
     delta2n = delta ** -2
-    A = np.zeros((N, N, N, N))
+    A = lil_matrix((N ** 2, N ** 2))
+
     for k in range(N):
         for j in range(N):
-            for k1 in range(N):
-                for j1 in range(N):
-                    if k == k1 and j == j1:
-                        # A[k][k1][j][j1] = -4
-                        A[k][j][k1][j1] = -4
-                    elif abs(k - k1) == 1 and j == j1 and (k - N / 2) ** 2 + (j - N / 2) ** 2 < delta2n:
-                        # elif abs(k - k1) == 1 and j == j1:
-                        # A[k][k1][j][j1] = 1
-                        A[k][j][k1][j1] = 1
-                    elif abs(j - j1) == 1 and k == k1 and (k - N / 2) ** 2 + (j - N / 2) ** 2 < delta2n:
-                        # elif abs(j - j1) == 1 and k == k1:
-                        # A[k][k1][j][j1] = 1
-                        A[k][j][k1][j1] = 1
+            # print(k * N + k, j * N + j)
+            A[k * N + j, k * N + j] = -4
+
+    for k in range(N):
+        for j in range(1, N - 1):
+            if (k - half_N) ** 2 + (j + 1 - half_N) ** 2 <= delta2n:
+                A[k * N + j + 1, k * N + j] = 1
+            if (k - half_N) ** 2 + (j - 1 - half_N) ** 2 <= delta2n:
+                A[k * N + j - 1, k * N + j] = 1
+            if (k - half_N) ** 2 + (j - half_N) ** 2 <= delta2n:
+                A[k * N + j, k * N + j + 1] = 1
+                A[k * N + j, k * N + j - 1] = 1
+
+    for j in range(N):
+        for k in range(1, N - 1):
+            if (k + 1 - half_N) ** 2 + (j - half_N) ** 2 <= delta2n:
+                A[(k + 1) * N + j, k * N + j] = 1
+            if (k - 1 - half_N) ** 2 + (j - half_N) ** 2 <= delta2n:
+                A[(k - 1) * N + j, k * N + j] = 1
+            if (k - half_N) ** 2 + (j - half_N) ** 2 <= delta2n:
+                A[k * N + j, (k + 1) * N + j] = 1
+                A[k * N + j, (k - 1) * N + j] = 1
 
     return A
-
-
-a = -1
-b = 1
-
-
-# g = lambda x, y: (x ** 2 + y ** 2 - 1) / 4
-
-def g(x, y):
-    if x ** 2 + y ** 2 < 1:
-        return (x ** 2 + y ** 2 - 1) / 4
-    else:
-        return 0
-
-
-es = []
-ns = []
-
-n = 80
 
 
 def draw_plot(xs, ys, u):
@@ -87,50 +83,65 @@ def draw_plot(xs, ys, u):
     plt.show()
 
 
-for N in range(n, n + 1, 1):
-    delta, B, xs, ys = get_B(a, b, N)
-    A = make_A(N, delta)
+a = -1
+b = 1
 
-    A_reshaped = np.reshape(A, (N ** 2, N ** 2))
+g = lambda x, y: (x ** 2 + y ** 2 - 1) / 4 if x ** 2 + y ** 2 < 1 else 0
+
+# def g(x, y):
+#     if x ** 2 + y ** 2 < 1:
+#         return (x ** 2 + y ** 2 - 1) / 4
+#     else:
+#         return 0
+
+
+es = []
+deltas = []
+# ns=[10,20,50,100]
+ns = [50]
+
+for N in ns:
+
+    delta, B, xs, ys = get_B(a, b, N)
+
+    A_reshaped = make_A_2d(N, delta)
     B_reshaped = np.reshape(B, (N ** 2))
 
-    # print(A_reshaped)
-    # print(B_reshaped)
+    print(A_reshaped.toarray())
 
-    u_reshaped = np.linalg.solve(A_reshaped, B_reshaped)
-    # print(u_reshaped)
+    u_reshaped = quick_solve_cgm(A_reshaped, B_reshaped, eps)
+
     u = np.reshape(u_reshaped, (N, N))
 
     # draw_plot(xs, ys, u)
 
-    print(ys)
-
-    z = [[g(x, y) for y in ys] for x in xs]
-    # draw_plot(xs, ys, z)
-
-    print(np.min(u))
-
-    print(min([min(zz) for zz in z]))
-
     errors = []
     delta2n = delta ** -2
     for k in range(N):
-        print()
+        errors.append([])
         for j in range(N):
-            if (k - N / 2) ** 2 + (j - N / 2) ** 2 < delta2n:
-                x = (a + k * delta)
-                y = (a + j * delta)
-                expected = g(x, y)
-                # print(expected, u[k][j])
-                if expected == 0:
-                    continue
-                errors.append(abs(expected - u[k][j]) / expected)
+            x = (a + k * delta)
+            y = (a + j * delta)
+            expected = g(x, y)
+            if expected == 0:
+                pass
+                errors[-1].append(u[k][j])
+            else:
+                errors[-1].append(abs(abs(expected - u[k][j]) / expected))
+
+            if errors[-1][-1] > 6 and x > 0 and y > 0:
+                print(k, j, expected, u[k][j], g(a + (k - 2) * delta, a + (j - 2) * delta), u[k - 2][j - 2])
+
+    # print(errors)
+    draw_plot(xs, ys, errors)
 
     es.append(max(errors))
-    ns.append(N)
+    # deltas.append(1 / N)
+    deltas.append(N)
 
 print(es)
 
 # plt.yscale('log')
-# plt.plot(ns, es)
+# plt.xscale('log')
+# plt.plot(deltas, es)
 # plt.show()
