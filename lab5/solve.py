@@ -3,14 +3,16 @@ import matplotlib.pyplot as plt
 import math
 
 
-def make_A(xs):
+def make_A(xs, delta):
     N = len(xs)
     A = np.zeros((N, N))
 
-    # for n in range(N):
-    #     for k in range(N):
-    #         if abs(i - j) == 1:
-                # A[i][j] = 1 / (xs[i] - xs[j])
+    for i in range(N):
+        for j in range(N):
+            if i == j:
+                A[i][j] = -2 / delta
+            elif abs(i - j) == 1:
+                A[i][j] = 1 / delta
 
     return A
 
@@ -55,7 +57,9 @@ for N in ns:
     xs = [a + x * delta for x in range(N + 1)]
 
     B = make_B(xs)
-    A = make_A(xs)
+
+    print(B)
+    A = make_A(xs, delta)
 
     f = np.linalg.solve(A, B)
     f = list(f)

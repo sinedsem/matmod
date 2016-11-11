@@ -63,6 +63,12 @@ def make_A_2d(N, delta):
                 A[k * N + j, (k + 1) * N + j] = 1
                 A[k * N + j, (k - 1) * N + j] = 1
 
+    # for j in range(N ** 2):
+    #     for k in range(N ** 2):
+    #         if abs(A[k, j] - A[j, k]) == 1:
+    #             A[k, j] = 0
+    #             A[j, k] = 0
+
     return A
 
 
@@ -97,8 +103,8 @@ g = lambda x, y: (x ** 2 + y ** 2 - 1) / 4 if x ** 2 + y ** 2 < 1 else 0
 
 es = []
 deltas = []
-# ns=[10,20,50,100]
-ns = [50]
+# ns = [10, 15, 20, 40, 50, 75, 100, 125, 150, 200, 400]
+ns = [30]
 
 for N in ns:
 
@@ -107,7 +113,9 @@ for N in ns:
     A_reshaped = make_A_2d(N, delta)
     B_reshaped = np.reshape(B, (N ** 2))
 
+    print(abs((A_reshaped - A_reshaped.transpose())).max())
     print(A_reshaped.toarray())
+    # break
 
     u_reshaped = quick_solve_cgm(A_reshaped, B_reshaped, eps)
 
@@ -116,6 +124,7 @@ for N in ns:
     # draw_plot(xs, ys, u)
 
     errors = []
+    bb = []
     delta2n = delta ** -2
     for k in range(N):
         errors.append([])
@@ -123,6 +132,10 @@ for N in ns:
             x = (a + k * delta)
             y = (a + j * delta)
             expected = g(x, y)
+
+            # errors.append((expected - u[k][j]) ** 2)
+            # bb.append(expected ** 2)
+
             if expected == 0:
                 pass
                 errors[-1].append(u[k][j])
@@ -135,11 +148,11 @@ for N in ns:
     # print(errors)
     draw_plot(xs, ys, errors)
 
-    es.append(max(errors))
+    es.append(sum(errors) / sum(bb))
     # deltas.append(1 / N)
     deltas.append(N)
 
-print(es)
+# print(es)
 
 # plt.yscale('log')
 # plt.xscale('log')
