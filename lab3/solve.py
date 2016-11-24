@@ -103,8 +103,9 @@ g = lambda x, y: (x ** 2 + y ** 2 - 1) / 4 if x ** 2 + y ** 2 < 1 else 0
 
 es = []
 deltas = []
-# ns = [10, 15, 20, 40, 50, 75, 100, 125, 150, 200, 400]
-ns = [30]
+ns = [10, 15, 20, 50, 100, 200, 400, 800, 1500]
+# ns = [10, 15, 20, 40, 50, 75, 100]
+# ns = [30]
 
 for N in ns:
 
@@ -113,8 +114,8 @@ for N in ns:
     A_reshaped = make_A_2d(N, delta)
     B_reshaped = np.reshape(B, (N ** 2))
 
-    print(abs((A_reshaped - A_reshaped.transpose())).max())
-    print(A_reshaped.toarray())
+    # print(abs((A_reshaped - A_reshaped.transpose())).max())
+    # print(A_reshaped.toarray())
     # break
 
     u_reshaped = quick_solve_cgm(A_reshaped, B_reshaped, eps)
@@ -123,38 +124,31 @@ for N in ns:
 
     # draw_plot(xs, ys, u)
 
-    errors = []
-    bb = []
+    # calculating square error
+    errors_2d = []
+    denominator = []
+
     delta2n = delta ** -2
     for k in range(N):
-        errors.append([])
+        errors_2d.append([])
         for j in range(N):
             x = (a + k * delta)
             y = (a + j * delta)
             expected = g(x, y)
 
-            # errors.append((expected - u[k][j]) ** 2)
-            # bb.append(expected ** 2)
+            if x ** 2 + y ** 2 < 0.9:
+                errors_2d[-1].append(abs(abs(expected - u[k][j]) / expected))
+                denominator.append(expected ** 2)
 
-            if expected == 0:
-                pass
-                errors[-1].append(u[k][j])
-            else:
-                errors[-1].append(abs(abs(expected - u[k][j]) / expected))
+    # draw_plot(xs, ys, errors)
 
-            if errors[-1][-1] > 6 and x > 0 and y > 0:
-                print(k, j, expected, u[k][j], g(a + (k - 2) * delta, a + (j - 2) * delta), u[k - 2][j - 2])
-
-    # print(errors)
-    draw_plot(xs, ys, errors)
-
-    es.append(sum(errors) / sum(bb))
+    es.append(sum(np.sum(errors_2d)) / sum(denominator))
     # deltas.append(1 / N)
     deltas.append(N)
 
-# print(es)
+print(es)
 
-# plt.yscale('log')
-# plt.xscale('log')
-# plt.plot(deltas, es)
-# plt.show()
+plt.yscale('log')
+plt.xscale('log')
+plt.plot(deltas, es)
+plt.show()
