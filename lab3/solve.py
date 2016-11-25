@@ -43,25 +43,30 @@ def make_A_2d(N, delta):
             # print(k * N + k, j * N + j)
             A[k * N + j, k * N + j] = -4
 
-    for k in range(N):
+    for k in range(1, N - 1):
         for j in range(1, N - 1):
-            if (k - half_N) ** 2 + (j + 1 - half_N) ** 2 <= delta2n:
-                A[k * N + j + 1, k * N + j] = 1
-            if (k - half_N) ** 2 + (j - 1 - half_N) ** 2 <= delta2n:
-                A[k * N + j - 1, k * N + j] = 1
-            if (k - half_N) ** 2 + (j - half_N) ** 2 <= delta2n:
-                A[k * N + j, k * N + j + 1] = 1
-                A[k * N + j, k * N + j - 1] = 1
+            A[k * N + j, (k + 1) * N + j] = 1
+            A[k * N + j, (k - 1) * N + j] = 1
+            A[k * N + j, k * N + j + 1] = 1
+            A[k * N + j, k * N + j - 1] = 1
 
-    for j in range(N):
-        for k in range(1, N - 1):
-            if (k + 1 - half_N) ** 2 + (j - half_N) ** 2 <= delta2n:
-                A[(k + 1) * N + j, k * N + j] = 1
-            if (k - 1 - half_N) ** 2 + (j - half_N) ** 2 <= delta2n:
-                A[(k - 1) * N + j, k * N + j] = 1
-            if (k - half_N) ** 2 + (j - half_N) ** 2 <= delta2n:
-                A[k * N + j, (k + 1) * N + j] = 1
-                A[k * N + j, (k - 1) * N + j] = 1
+            A[(k + 1) * N + j, k * N + j] = 1
+            A[(k - 1) * N + j, k * N + j] = 1
+            A[k * N + j + 1, k * N + j] = 1
+            A[k * N + j - 1, k * N + j] = 1
+
+    for k in range(1, N - 1):
+        for j in range(1, N - 1):
+            if (k - half_N) ** 2 + (j - half_N) ** 2 > delta2n:
+                A[k * N + j, (k + 1) * N + j] = 0
+                A[k * N + j, (k - 1) * N + j] = 0
+                A[k * N + j, k * N + j + 1] = 0
+                A[k * N + j, k * N + j - 1] = 0
+
+                A[(k + 1) * N + j, k * N + j] = 0
+                A[(k - 1) * N + j, k * N + j] = 0
+                A[k * N + j + 1, k * N + j] = 0
+                A[k * N + j - 1, k * N + j] = 0
 
     # for j in range(N ** 2):
     #     for k in range(N ** 2):
@@ -102,10 +107,11 @@ g = lambda x, y: (x ** 2 + y ** 2 - 1) / 4 if x ** 2 + y ** 2 < 1 else 0
 
 
 es = []
+residuals = []
 deltas = []
-ns = [10, 15, 20, 50, 100, 200, 400, 800, 1500]
+# ns = [10, 15, 20, 50, 100, 200, 400, 800, 1500]
 # ns = [10, 15, 20, 40, 50, 75, 100]
-# ns = [30]
+ns = [100]
 
 for N in ns:
 
@@ -115,7 +121,8 @@ for N in ns:
     B_reshaped = np.reshape(B, (N ** 2))
 
     # print(abs((A_reshaped - A_reshaped.transpose())).max())
-    # print(A_reshaped.toarray())
+    print(A_reshaped.toarray())
+    # print(A_reshaped)
     # break
 
     u_reshaped = quick_solve_cgm(A_reshaped, B_reshaped, eps)
@@ -124,6 +131,7 @@ for N in ns:
 
     # draw_plot(xs, ys, u)
 
+    residuals.append(np.sqrt(sum((A_reshaped.dot(u_reshaped) - B_reshaped) ** 2)))
     # calculating square error
     errors_2d = []
     denominator = []
@@ -139,16 +147,21 @@ for N in ns:
             if x ** 2 + y ** 2 < 0.9:
                 errors_2d[-1].append(abs(abs(expected - u[k][j]) / expected))
                 denominator.append(expected ** 2)
+            else:
+                errors_2d[-1].append(0)
 
-    # draw_plot(xs, ys, errors)
+    print(errors_2d)
+
+    draw_plot(xs, ys, errors_2d)
 
     es.append(sum(np.sum(errors_2d)) / sum(denominator))
     # deltas.append(1 / N)
     deltas.append(N)
 
 print(es)
+# print(residuals)
 
-plt.yscale('log')
-plt.xscale('log')
-plt.plot(deltas, es)
-plt.show()
+# plt.yscale('log')
+# plt.xscale('log')
+# plt.plot(deltas, es)
+# plt.show()
