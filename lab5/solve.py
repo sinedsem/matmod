@@ -5,6 +5,7 @@ import math
 
 def make_A(xs, delta):
     N = len(xs)
+    N -= 2
     A = np.zeros((N, N))
 
     for i in range(N):
@@ -23,13 +24,16 @@ def make_B(xs):
     first = lambda a, b: -(a - b) * (a ** 2 + 2 * a * b + 3 * b ** 2) / 12
     second = lambda a, b: -(a - b) * (3 * a ** 2 + 2 * a * b + b ** 2) / 12
 
-    for i in range(len(xs)):
+    for i in range(len(xs) - 2):
         bi = 0
         if i > 0:
             bi += first(xs[i - 1], xs[i])
         if i < len(xs) - 1:
             bi += second(xs[i], xs[i + 1])
         b.append(bi)
+
+    b[0] -= 0
+    b[-1] -= 1 / delta
 
     return b
 
@@ -39,15 +43,15 @@ b = 1
 
 
 def true_f(x):
-    return 2 * math.tan(1 / 2) * math.sin(x) + 2 * math.cos(x) + x ** 2 - 2
+    return x * (11 + x ** 3) / 12
 
 
 def g(x):
     return x ** 2
 
 
-# ns = [x * 100 + 5 for x in range(16)]
-ns = [20]
+ns = [x * 100 + 5 for x in range(16)]
+# ns = [100]
 
 es = []
 deltas = []
@@ -58,29 +62,27 @@ for N in ns:
 
     B = make_B(xs)
 
-    print(B)
     A = make_A(xs, delta)
 
     f = np.linalg.solve(A, B)
     f = list(f)
 
-    print(f)
-
-    plt.plot(xs, f)
-    plt.show()
-
-    break
+    f.insert(0, 0)
+    f.append(1)
+    # plt.plot(xs, f)
+    # plt.plot(xs, list(map(true_f, xs)))
+    # plt.show()
 
     errors = []
     for k in range(1, N):
         x = (a + k * delta)
         expected = true_f(x)
-        errors.append(abs(expected - f[k]) / expected)
+        errors.append((expected - f[k]) ** 2)
 
-    es.append(max(errors))
+    es.append(sum(errors))
     deltas.append(1 / N)
 
-# plt.yscale('log')
-# plt.xscale('log')
-# plt.plot(deltas, es)
-# plt.show()
+plt.yscale('log')
+plt.xscale('log')
+plt.plot(deltas, es)
+plt.show()
